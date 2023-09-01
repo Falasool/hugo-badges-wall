@@ -1,0 +1,119 @@
+{{ define "main" }} {{ $badges := getJSON "/static/badges/badges.json" }}
+
+<div id="badge-container"></div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 绑定页面
+    var badgeContainer = document.getElementById('badge-container')
+    // masonry 是瀑布流的库，在 .badge-container 里创建 .masonry-container 作为瀑布流的容器
+    var masonryContainer = document.createElement('div')
+    masonryContainer.className = 'masonry-container'
+
+    // 从 json 取数据，传入function
+    $.getJSON('/badges/badges.json', function (data) {
+      var badgeHtml = '' // Accumulate badge HTML in this variable
+      // jQuery 的 each 方法用于遍历
+      // 以下分别遍历了轮播图和 tag
+      $.each(data, function (index, badge) {
+        badgeHtml += `
+        <a class="badge" href="${badge.link}">
+          <div class="badge-images">
+            <div class="swiper-container swiper-${index}">
+              <div class="swiper-wrapper">
+                ${badge.images
+                  .map(
+                    (image, imgIndex) => `
+                  <div class="swiper-slide">
+                    <object>
+                      <a class="badge-image-link" href="${image}" data-fancybox="group-${index}" data-caption="${badge.title}">
+                        // 修改：懒加载
+                        <img src="${image}" class="badge-image" loading="lazy" alt="Image">
+                      </a> 
+                    </object>
+                    
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+              <div class="swiper-pagination"></div>
+            </div>
+          </div>
+
+          <ul class="tag-wrapper">
+            ${badge.tags
+              .map(
+                (tag, tagIndex) => `<li class="tag tag-${index}">${tag}</li>`
+              )
+              .join('')}
+            
+          </ul>
+          
+          <h2>${badge.title}</h2>
+          <h3>${badge.subtitle}</h3>
+          <p class="description">${badge.description.replace(/\n/g, '<br>')}</p>
+        </a>
+      `
+      // ⬆️ replace(/\n/g, '<br>')用于正则替换，/\n/g匹配描述文本中的所有换行符(\n)替换为'<br>'
+      })
+
+      // After the loop, add the accumulated badge HTML to masonryContainer
+      // 把遍历结果赋值给瀑布流容器
+      masonryContainer.innerHTML = badgeHtml
+      // 添加到容器末尾
+      badgeContainer.appendChild(masonryContainer)
+
+      // Q：innerHTML和appendChild的区别在于？
+      // innerHTML用于修改元素的内部HTML内容,相当于直接插入HTML字符串。(无中生有)
+      // appendChild是将一个DOM元素插入到容器中,是将元素添加到容器里。（1.创造 2.插入一步一步来）
+
+      // Initialize Swiper for each badge
+      $.each(data, function (index, badge) {
+        var badgeSwiper = new Swiper('.swiper-' + index, {
+          // pagination 的类名
+          pagination: '.swiper-' + index + ' .swiper-pagination',
+          // pagination 可点击
+          paginationClickable: true,
+          // 自适应高度
+          autoHeight: true,
+          // 允许键鼠控制
+          keyboardControl: true,
+          mousewheelControl: true,
+          // 懒加载
+          lazyLoading: true,
+          lazyLoadingInPrevNext: true,
+          // 循环模式
+          loop: true,
+          initialSlide: 0,
+        })
+      })
+
+      // Initialize Masonry after badges are added
+      var masonry = new Masonry(masonryContainer, {
+        itemSelector: '.badge',
+        columnWidth: '.badge',
+        gutter: 14, // Adjust as needed
+      })
+    }) // End of $.getJSON('/static/badges/badges.json')
+  })
+</script>
+
+<!-- Include Masonry.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js"></script>
+<!-- Include Swiper CSS and JS -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/css/swiper.min.css"
+/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.min.js"></script>
+<!-- Include Fancybox CSS -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css"
+/>
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Include Fancybox JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+{{ end }}
